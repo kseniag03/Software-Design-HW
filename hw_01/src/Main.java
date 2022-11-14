@@ -69,7 +69,7 @@ public class Main {
         System.out.printf("%d \n", result);
     }
 
-    public static void sortArray(int[] array) {
+    public static void bubbleSort(int[] array) {
         for (int i = 0; i < array.length; ++i) {
             for (int j = 0; j < array.length - 1; ++j) {
                 if (array[j] > array[j + 1]) {
@@ -81,14 +81,21 @@ public class Main {
         }
     }
 
-    public static void bubbleSort() {
-        int[] array = {-1, 92, 43, -4, 51, 88, -102, 11, 20, 0, -1, 45, 20, 115};
+    public static void sortArray(Scanner in) {
+        //int[] array = {-1, 92, 43, -4, 51, 88, -102, 11, 20, 0, -1, 45, 20, 115};
+        System.out.print("Input length: ");
+        int size = in.nextInt();
+        int[] array = new int[size];
+        System.out.print("Input array: ");
+        for (int i = 0; i < size; ++i) {
+            array[i] = in.nextInt();
+        }
         System.out.print("Array: ");
         for (int num: array) {
             System.out.printf("%d ", num);
         }
         System.out.println();
-        sortArray(array);
+        bubbleSort(array);
         System.out.print("Sorted array: ");
         for (int num: array) {
             System.out.printf("%d ", num);
@@ -113,7 +120,7 @@ public class Main {
         System.out.println("\nTask #1.3");
         printFactorial(in);
         System.out.println("\nTask #1.4");
-        bubbleSort();
+        sortArray(in);
         System.out.println("\nTask #1.5");
         countNumberOfConsonantsAndVowels(in);
         System.out.println();
