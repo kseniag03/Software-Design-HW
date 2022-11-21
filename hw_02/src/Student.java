@@ -1,6 +1,6 @@
 public class Student {
     private static int counter = 0;
-    private int studentId;
+    private final int studentId;
     private final String firstName;
     private final String lastName;
     private int grade;
@@ -12,6 +12,10 @@ public class Student {
         this.lastName = lastName;
         this.grade = 0;
         this.present = false;
+    }
+
+    public int getStudentId() {
+        return studentId;
     }
 
     public String getName() {

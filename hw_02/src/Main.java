@@ -1,3 +1,5 @@
+// Homework #2
+
 // Create an application to chose random student to answer a question.
 // Once a student is chosen teacher has an option to flag student as present.
 // After that teacher can grade the answer from 1 to 10.
@@ -16,7 +18,6 @@
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import javax.swing.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -27,43 +28,21 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-
         ArrayList<Student> students = new ArrayList<>();
-        students.add(new Student("John", "Doe"));
-        students.add(new Student("Jane", "Doe"));
-
-        JSONObject json = new JSONObject();
-        JSONArray array = new JSONArray();
-
-        for (Student student : students) {
-            JSONObject studentJson = new JSONObject();
-            studentJson.put("firstName", student.getFirstName());
-            studentJson.put("lastName", student.getLastName());
-            studentJson.put("grade", student.getGrade());
-            studentJson.put("present", student.isPresent());
-            array.put(studentJson);
-        }
-
-        json.put("students", array);
-        //System.out.println(json.toString());
-        saveStudents(json);
-
         loadStudents(students);
 
-        for (Student student : students) {
-            System.out.println(student);
-        }
+        new Frontend();
 
-        //new Frontend();
-
-
-        while(true) {
+        while (true) {
             System.out.print("Put your command: ");
             Scanner scanner = new Scanner(System.in);
             String command = scanner.nextLine();
             switch (command) {
                 case "/r":
-                    System.out.println(returnRandomStudent(students));
+                    var st = returnRandomStudent(students);
+                    System.out.println("Student: " + st.getName()
+                            + " received a grade: " + st.getGrade());
+                    saveStudents(students);
                     break;
                 case "/l":
                     for (Student student : students) {
@@ -73,83 +52,111 @@ public class Main {
                     }
                     break;
                 case "/h":
-                    System.out.println("Commands:");
-                    System.out.println("/r – selects random student, asks if present");
-                    System.out.println("/l – list of students who received a grade");
-                    System.out.println("/h – help, lists commands and how to use them");
-                    System.out.println("/e – exit");
+                    System.out.println(Constants.HELP);
                     break;
                 case "/e":
-                    System.out.println("Bye!");
-                    break;
+                    System.out.println(Constants.FINISH);
+                    return;
                 default:
-                    System.out.println("Unknown command");
+                    System.out.println(Constants.UNKNOWN_COMMAND);
             }
         }
     }
+
+    private static boolean isStudentInList(int id, ArrayList<Student> students) {
+        for (var st : students) {
+            if (st.getStudentId() == id) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Reads students from JSON file and adds them to the list
+     * @param students list of students
+     */
     private static void loadStudents(ArrayList<Student> students) {
-        File file = new File("students.json");
-
-        String fileContent = "";
-
+        var file = new File(Constants.JSON_FILE_NAME);
+        var fileContent = new StringBuilder();
         if (file.exists()) {
-            // load students
-
-            try (FileInputStream stream = new FileInputStream(file)) {
-                int i = -1;
+            try (var stream = new FileInputStream(file)) {
+                int i;
                 while((i = stream.read()) != -1) {
-                    //System.out.print((char)i);
-                    fileContent += (char)i;
-                    //fileContent.append((char)i);
+                    fileContent.append((char) i);
                 }
             } catch(IOException ex){
                 System.out.println(ex.getMessage());
-            } catch (Exception ex) {
-                System.out.println(ex.getMessage());
             }
+            var parser = new JSONObject(fileContent.toString());
+            var getStudents = (JSONArray) parser.get("students");
+            for (var i = 0; i < getStudents.length(); i++) {
+                var student = getStudents.getJSONObject(i);
+                var id = student.getInt("id");
+                if (isStudentInList(id, students)) {
+                    continue;
+                }
+                var firstName = student.getString("firstName");
+                var lastName = student.getString("lastName");
+                var grade = student.getInt("grade");
+                var present = student.getBoolean("present");
 
-            System.out.println(fileContent);
-
-            JSONObject parser = new JSONObject(fileContent);
-            var getStudents = (JSONArray)parser.get("students");
-
-            for (int i = 0; i < getStudents.length(); i++) {
-                System.out.println(getStudents.get(i));
-            }
-
-            for (int i = 0; i < getStudents.length(); i++) {
-                var student = getStudents.getJSONObject(i); //getStudents.get(i);
-                System.out.println(student);
-
-                String firstName = student.getString("firstName");
-                String lastName = student.getString("lastName");
-                int grade = student.getInt("grade");
-                boolean present = student.getBoolean("present");
-
-                Student st = new Student(firstName, lastName);
+                var st = new Student(firstName, lastName);
                 st.setGrade(grade);
                 st.setPresent(present);
                 students.add(st);
             }
         }
     }
-    private static void saveStudents(JSONObject json) {
-        // save students
-        try (FileOutputStream stream = new FileOutputStream("students.json")) {
+
+    /**
+     * Serializes students list and saves it to JSON file
+     * @param students list of students
+     */
+    private static void saveStudents(ArrayList<Student> students) {
+        var json = new JSONObject();
+        var array = new JSONArray();
+        for (var student : students) {
+            var studentJson = new JSONObject();
+            studentJson.put("id", student.getStudentId());
+            studentJson.put("firstName", student.getFirstName());
+            studentJson.put("lastName", student.getLastName());
+            studentJson.put("grade", student.getGrade());
+            studentJson.put("present", student.isPresent());
+            array.put(studentJson);
+        }
+        json.put("students", array);
+        try (var stream = new FileOutputStream(Constants.JSON_FILE_NAME)) {
             stream.write(json.toString().getBytes());
         } catch(IOException ex){
             System.out.println(ex.getMessage());
-        } catch (Exception ex) {
-            System.out.println(ex.getMessage());
         }
     }
+
+    /**
+     * Returns a random student from the list,
+     * if the student is not present,
+     * marks him or her present and sets a random grade,
+     * else chooses the nearest not present student
+     * (if there is no not present student, marks will be rewritten)
+     * @param students list of students
+     * @return random student
+     */
     private static Student returnRandomStudent(ArrayList<Student> students) {
-        Random random = new Random();
+        var random = new Random();
         var student = students.get(random.nextInt(students.size()));
+        if (student.isPresent()) {
+            for (var st : students) {
+                if (!st.isPresent()) {
+                    student = st;
+                    break;
+                }
+            }
+        }
         student.setPresent(true);
         student.setGrade(random.nextInt(9) + 1);
         return student;
     }
 }
 
-// connecting library + json serialization + filestream
+// new: connecting library + JsonSerialization + FileStream + JFrame
